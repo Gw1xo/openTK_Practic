@@ -1,6 +1,5 @@
 ﻿using OpenTK.Windowing.Desktop;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
 
 internal class Program
 {
@@ -11,7 +10,7 @@ internal class Program
             // елементарні налаштування вікна
             Size = new Vector2i(800, 600),
             Title = "Madness",
-            Flags = ContextFlags.ForwardCompatible,
+            
         };
 
         //створимо екземпляр вікна
