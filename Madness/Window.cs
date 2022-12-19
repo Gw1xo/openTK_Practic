@@ -1,4 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -6,24 +6,33 @@ using System.Diagnostics;
 
 
 public class Window : GameWindow
-{   
-    // тут розглядено уніфіковані типи змінних
+{
+    // Оскільки ми додаємо текстуру, ми змінюємо масив вершин, щоб включити координати текстури.
+    // Координати текстури в діапазоні від 0,0 до 1,0, де (0,0, 0,0) представляють нижній лівий кут, а (1,0, 1,0) представляють верхній правий.
     private readonly float[] _vertices =
     {
-            -0.5f, -0.5f, 0.0f, 
-             0.5f, -0.5f, 0.0f, 
-             0.0f,  0.5f, 0.0f  
+            // Координати               Координати текстури
+             0.5f,  0.5f, 0.0f,         1.0f, 1.0f, 
+             0.5f, -0.5f, 0.0f,         1.0f, 0.0f, 
+            -0.5f, -0.5f, 0.0f,         0.0f, 0.0f, 
+            -0.5f,  0.5f, 0.0f,         0.0f, 1.0f  
         };
 
-    // змусими трикутник пульсувати міє певним діапазоном кольорів
-    // для цього нам потрібен таймер адже вінпостійно зростає 
-    private Stopwatch _timer;
+    private readonly uint[] _indices =
+    {
+            0, 1, 3,
+            1, 2, 3
+        };
+
+    private int _elementBufferObject;
 
     private int _vertexBufferObject;
 
     private int _vertexArrayObject;
 
     private Shader _shader;
+
+    private Texture _texture;
 
     public Window(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
         : base(gameWindowSettings, nativeWindowSettings)
@@ -36,26 +45,36 @@ public class Window : GameWindow
 
         GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-        _vertexBufferObject = GL.GenBuffer();
-
-        GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-        GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
-
         _vertexArrayObject = GL.GenVertexArray();
         GL.BindVertexArray(_vertexArrayObject);
 
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
-        GL.EnableVertexAttribArray(0);
+        _vertexBufferObject = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
+        GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-        GL.GetInteger(GetPName.MaxVertexAttribs, out int maxAttributeCount);
-        Debug.WriteLine($"Maximum number of vertex attributes supported: {maxAttributeCount}");
+        _elementBufferObject = GL.GenBuffer();
+        GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
+        GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
-        _shader = new Shader("Shaders/shader.vert", "Shaders/shader.frag");
+        _shader = new Shader("Shaders/shader.vert", "Shaders/fragshader.frag");
         _shader.Use();
 
-        // запускаємо секундомір
-        _timer = new Stopwatch();
-        _timer.Start();
+        // Оскільки між початком першої вершини та початком другої тепер є 5 флоатів,
+        // ми змінюємо крок від 3 * sizeof(float) до 5 * sizeof(float).
+        // Це тепер передасть новий масив вершин до буфера.
+        var vertexLocation = _shader.GetAttribLocation("aPosition");
+        GL.EnableVertexAttribArray(vertexLocation);
+        GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+
+        // Далі ми також встановлюємо координати текстури. Це працює приблизно так само.
+        // Ми додаємо зсув 3, оскільки координати текстури йдуть після даних позиції.
+        // Ми також змінюємо кількість даних на 2, тому що для координат текстури є лише 2 числа з плаваючою точкою.
+        var texCoordLocation = _shader.GetAttribLocation("aTexCoord");
+        GL.EnableVertexAttribArray(texCoordLocation);
+        GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+
+        _texture = Texture.LoadFromFile("Resources/container.png");
+        _texture.Use(TextureUnit.Texture0);
     }
 
     protected override void OnRenderFrame(FrameEventArgs e)
@@ -64,26 +83,12 @@ public class Window : GameWindow
 
         GL.Clear(ClearBufferMask.ColorBufferBit);
 
-        _shader.Use();
-
-        // тут ми отримуємо загальну кількість секунд, що минули з моменту останнього скидання цього методу
-        // і ми призначаємо його змінній timeValue, щоб його можна було використовувати для пульсуючого кольору
-        double timeValue = _timer.Elapsed.TotalSeconds;
-
-        // оскільки синус набуває значень між -1 та 1 зробимо синусоїдальну зміну кольору
-        float greenValue = (float)Math.Sin(timeValue) / 2.0f + 0.5f;
-
-        // отримуємо уніфіковану змінну з фрагментного шейдеру
-        int vertexColorLocation = GL.GetUniformLocation(_shader.Handle, "ourColor");
-
-        // тут ми призначаємо змінну ourColor у фрагментному шейдері
-        // через метод OpenGL Uniform, який приймає значення як окремі значення vec
-        GL.Uniform4(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-        // GL.Uniform4(vertexColorLocation, new OpenTK.Mathematics.Color4(0f, greenValue, 0f, 0f));
-       
         GL.BindVertexArray(_vertexArrayObject);
 
-        GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
+        _texture.Use(TextureUnit.Texture0);
+        _shader.Use();
+
+        GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
 
         SwapBuffers();
     }

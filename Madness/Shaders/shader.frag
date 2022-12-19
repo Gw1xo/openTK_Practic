@@ -1,11 +1,12 @@
-﻿#version 330 core
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-out vec4 outputColor;
-
-// ключове слово Uniform дозволяє отримати доступ до змінної шейдера на будь-якому етапі ланцюжка шейдерів
-uniform vec4 ourColor; 
-
-void main()
+namespace Madness.Shaders
 {
-    outputColor = ourColor;
+    class shader
+    {
+    }
 }
