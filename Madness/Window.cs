@@ -1,4 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -57,9 +58,7 @@ public class Window : GameWindow
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
         GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
-        // щось через коментарі шейдери перестали працювати
-        // тому коментуватиму зміни тут
-        // додано вхідний параметер для другої текстури
+        //у вертексний шейдер додано пераметер трансформації матриці
         _shader = new Shader("Shaders/shader.vert", "Shaders/fragshader.frag");
         _shader.Use();
 
@@ -72,16 +71,13 @@ public class Window : GameWindow
         GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
 
         _texture = Texture.LoadFromFile("Resources/container.png");
-        // Перша текстура йде в блок текстури 0.
+
         _texture.Use(TextureUnit.Texture0);
 
-        // оскільки System.Drawing читає пікселі не так як очікує OpenGL
+
         _texture2 = Texture.LoadFromFile("Resources/awesomeface.png");
-        // друга текстура йде в блок текстури 1.
         _texture2.Use(TextureUnit.Texture1);
 
-        // Далі ми повинні налаштувати вибірки в шейдерах для використання правильних текстур.
-        // Int, який ми надсилаємо у uniform, вказує, яку текстурну одиницю має використовувати семплер.
         _shader.SetInt("texture0", 0);
         _shader.SetInt("texture1", 1);
     }
@@ -94,8 +90,24 @@ public class Window : GameWindow
 
         GL.BindVertexArray(_vertexArrayObject);
 
+        // створимо одиничну матрицю
+        var transform = Matrix4.Identity;
+
+        // Тут ми поєднуємо матрицю перетворення з іншою, створеною OpenTK, щоб повернути її на 20 градусів.
+        transform = transform * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(20f));
+
+        // Далі ми масштабуємо матрицю.
+        transform = transform * Matrix4.CreateScale(1.1f);
+
+        // Потім ми транслюємо матрицю, що трохи переміщує її у верхній правий кут.
+        transform = transform * Matrix4.CreateTranslation(0.1f, 0.1f, 0.0f);
+
         _texture.Use(TextureUnit.Texture0);
+        _texture2.Use(TextureUnit.Texture1);
         _shader.Use();
+
+        // уніфікуємо матрицю в шейдер
+        _shader.SetMatrix4("transform", transform);
 
         GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
 
