@@ -33,6 +33,7 @@ public class Window : GameWindow
     private Shader _shader;
 
     private Texture _texture;
+    private Texture _texture2;
 
     public Window(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
         : base(gameWindowSettings, nativeWindowSettings)
@@ -56,25 +57,33 @@ public class Window : GameWindow
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
         GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
+        // щось через коментарі шейдери перестали працювати
+        // тому коментуватиму зміни тут
+        // додано вхідний параметер для другої текстури
         _shader = new Shader("Shaders/shader.vert", "Shaders/fragshader.frag");
         _shader.Use();
 
-        // Оскільки між початком першої вершини та початком другої тепер є 5 флоатів,
-        // ми змінюємо крок від 3 * sizeof(float) до 5 * sizeof(float).
-        // Це тепер передасть новий масив вершин до буфера.
         var vertexLocation = _shader.GetAttribLocation("aPosition");
         GL.EnableVertexAttribArray(vertexLocation);
         GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
 
-        // Далі ми також встановлюємо координати текстури. Це працює приблизно так само.
-        // Ми додаємо зсув 3, оскільки координати текстури йдуть після даних позиції.
-        // Ми також змінюємо кількість даних на 2, тому що для координат текстури є лише 2 числа з плаваючою точкою.
         var texCoordLocation = _shader.GetAttribLocation("aTexCoord");
         GL.EnableVertexAttribArray(texCoordLocation);
         GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
 
         _texture = Texture.LoadFromFile("Resources/container.png");
+        // Перша текстура йде в блок текстури 0.
         _texture.Use(TextureUnit.Texture0);
+
+        // оскільки System.Drawing читає пікселі не так як очікує OpenGL
+        _texture2 = Texture.LoadFromFile("Resources/awesomeface.png");
+        // друга текстура йде в блок текстури 1.
+        _texture2.Use(TextureUnit.Texture1);
+
+        // Далі ми повинні налаштувати вибірки в шейдерах для використання правильних текстур.
+        // Int, який ми надсилаємо у uniform, вказує, яку текстурну одиницю має використовувати семплер.
+        _shader.SetInt("texture0", 0);
+        _shader.SetInt("texture1", 1);
     }
 
     protected override void OnRenderFrame(FrameEventArgs e)
