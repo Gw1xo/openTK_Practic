@@ -2,9 +2,10 @@
 
 out vec4 outputColor;
 
-in vec4 vertexColor;
+// ключове слово Uniform дозволяє отримати доступ до змінної шейдера на будь-якому етапі ланцюжка шейдерів
+uniform vec4 ourColor; 
 
 void main()
 {
-    outputColor = vertexColor;
+    outputColor = ourColor;
 }

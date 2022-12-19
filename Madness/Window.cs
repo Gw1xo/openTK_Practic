@@ -6,16 +6,18 @@ using System.Diagnostics;
 
 
 public class Window : GameWindow
-{
-
-    // тут попрацюємо з кольорами
+{   
+    // тут розглядено уніфіковані типи змінних
     private readonly float[] _vertices =
     {
-             // позиція           // кольор
-             0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // нижній правий
-            -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // нижній лівий
-             0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // верхній
+            -0.5f, -0.5f, 0.0f, 
+             0.5f, -0.5f, 0.0f, 
+             0.0f,  0.5f, 0.0f  
         };
+
+    // змусими трикутник пульсувати міє певним діапазоном кольорів
+    // для цього нам потрібен таймер адже вінпостійно зростає 
+    private Stopwatch _timer;
 
     private int _vertexBufferObject;
 
@@ -28,7 +30,6 @@ public class Window : GameWindow
     {
     }
 
-    // проініціалізуємо OpenGL
     protected override void OnLoad()
     {
         base.OnLoad();
@@ -43,24 +44,18 @@ public class Window : GameWindow
         _vertexArrayObject = GL.GenVertexArray();
         GL.BindVertexArray(_vertexArrayObject);
 
-        // створюємо вказівник для 3 позиційних компонентів наших вершин.
-        // єдина відмінність тут полягає в тому, що нам потрібно врахувати значення 3 кольорів у змінній stride
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
         GL.EnableVertexAttribArray(0);
-
-        // створюємо новий покажчик для значень кольорів.
-        // подібно до попереднього покажчика, ми призначаємо 6 у значенні кроку.
-        // нам також потрібно правильно встановити зсув, щоб отримати значення кольорів.
-        // дані кольору починаються після даних позиції, тому зміщення дорівнює 3 флоатам.
-        GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
-        // Потім ми вмикаємо атрибут кольору (location=1), щоб він був доступний для шейдера.
-        GL.EnableVertexAttribArray(1);
 
         GL.GetInteger(GetPName.MaxVertexAttribs, out int maxAttributeCount);
         Debug.WriteLine($"Maximum number of vertex attributes supported: {maxAttributeCount}");
 
         _shader = new Shader("Shaders/shader.vert", "Shaders/shader.frag");
         _shader.Use();
+
+        // запускаємо секундомір
+        _timer = new Stopwatch();
+        _timer.Start();
     }
 
     protected override void OnRenderFrame(FrameEventArgs e)
@@ -71,6 +66,21 @@ public class Window : GameWindow
 
         _shader.Use();
 
+        // тут ми отримуємо загальну кількість секунд, що минули з моменту останнього скидання цього методу
+        // і ми призначаємо його змінній timeValue, щоб його можна було використовувати для пульсуючого кольору
+        double timeValue = _timer.Elapsed.TotalSeconds;
+
+        // оскільки синус набуває значень між -1 та 1 зробимо синусоїдальну зміну кольору
+        float greenValue = (float)Math.Sin(timeValue) / 2.0f + 0.5f;
+
+        // отримуємо уніфіковану змінну з фрагментного шейдеру
+        int vertexColorLocation = GL.GetUniformLocation(_shader.Handle, "ourColor");
+
+        // тут ми призначаємо змінну ourColor у фрагментному шейдері
+        // через метод OpenGL Uniform, який приймає значення як окремі значення vec
+        GL.Uniform4(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        // GL.Uniform4(vertexColorLocation, new OpenTK.Mathematics.Color4(0f, greenValue, 0f, 0f));
+       
         GL.BindVertexArray(_vertexArrayObject);
 
         GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
