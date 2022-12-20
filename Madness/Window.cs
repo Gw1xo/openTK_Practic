@@ -5,13 +5,13 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
 
-
-// змусимо квадрат обертатись
+// створимо камеру
+// Насправді ми не можемо рухати камеру, але ми фактично рухаємо прямокутник.
 public class Window : GameWindow
 {
     private readonly float[] _vertices =
     {
-            // позиція              теккстурні координати
+            // позиція              координати текстури
              0.5f,  0.5f, 0.0f,      1.0f, 1.0f, 
              0.5f, -0.5f, 0.0f,      1.0f, 0.0f, 
             -0.5f, -0.5f, 0.0f,      0.0f, 0.0f, 
@@ -36,13 +36,19 @@ public class Window : GameWindow
 
     private Texture _texture2;
 
-    // створимо змінну часу, щоб указати, скільки часу минуло з моменту відкриття програми.
-    private double _time;
+    // Матриці перегляду та проекції видалено, оскільки вони більше тут не потрібні.
+    // Тепер вони в класі камера
 
-    // мотім створимо дві матриці для нашого перегляду та проекції
-    private Matrix4 _view;
-    // це показує, як будуть спроектовані вершини.
-    private Matrix4 _projection;
+    // потрібен екземпляр нового класу камери, щоб він міг керувати кодом матриці перегляду та проекції.
+    // також потрібне логічне значення true, щоб визначити, чи була миша переміщена вперше.
+    // додаємо останню позицію миші, щоб ми могли легко обчислити зсув миші.
+    private Camera _camera;
+
+    private bool _firstMove = true;
+
+    private Vector2 _lastPos;
+
+    private double _time;
 
     public Window(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
         : base(gameWindowSettings, nativeWindowSettings)
@@ -55,7 +61,6 @@ public class Window : GameWindow
 
         GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-        // Тут ми вмикаємо тестування глибини.Ми також очищаємо буфер глибини в GL.Clear в OnRenderFrame.
         GL.Enable(EnableCap.DepthTest);
 
         _vertexArrayObject = GL.GenVertexArray();
@@ -69,7 +74,6 @@ public class Window : GameWindow
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
         GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
-        // додано юніфікованні в mat4 змінні model, view , projection 
         _shader = new Shader("Shaders/shader.vert", "Shaders/fragshader.frag");
         _shader.Use();
 
@@ -90,25 +94,20 @@ public class Window : GameWindow
         _shader.SetInt("texture0", 0);
         _shader.SetInt("texture1", 1);
 
-        //  перемістимо вид на три одиниці назад по осі Z.
-        _view = Matrix4.CreateTranslation(0.0f, 0.0f, -3.0f);
+        // Ми ініціалізуємо камеру так, щоб вона була на 3 одиниці позаду від прямокутника.
+        // Ми також надаємо йому належне співвідношення сторін.
+        _camera = new Camera(Vector3.UnitZ * 3, Size.X / (float)Size.Y);
 
-        // Для матриці ми використовуємо кілька параметрів.
-        //   Поле зору.
-        //   Співвідношення сторін.
-        //   відсікання ближніх вершин.
-        //   відсікання дальніх вершин.
-        _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45f), Size.X / (float)Size.Y, 0.1f, 100.0f);
+        // захоплюємо курсор миші і робимо його невидимим
+        CursorState = CursorState.Grabbed;
     }
 
     protected override void OnRenderFrame(FrameEventArgs e)
     {
         base.OnRenderFrame(e);
 
-        // додаємо час, що минув з останнього кадру, помножений на 4,0 для прискорення анімації, до загальної кількості часу.
         _time += 4.0 * e.Time;
 
-        // очищаємо буфер глибини
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         GL.BindVertexArray(_vertexArrayObject);
@@ -117,13 +116,10 @@ public class Window : GameWindow
         _texture2.Use(TextureUnit.Texture1);
         _shader.Use();
 
-        // Нарешті маємо матрицю моделі
         var model = Matrix4.Identity * Matrix4.CreateRotationX((float)MathHelper.DegreesToRadians(_time));
-
-        // Потім ми передаємо всі ці матриці до вершинного шейдера.
         _shader.SetMatrix4("model", model);
-        _shader.SetMatrix4("view", _view);
-        _shader.SetMatrix4("projection", _projection);
+        _shader.SetMatrix4("view", _camera.GetViewMatrix());
+        _shader.SetMatrix4("projection", _camera.GetProjectionMatrix());
 
         GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
 
@@ -134,12 +130,75 @@ public class Window : GameWindow
     {
         base.OnUpdateFrame(e);
 
+        if (!IsFocused) // перевірка чи вікно у фокусі
+        {
+            return;
+        }
+
         var input = KeyboardState;
 
         if (input.IsKeyDown(Keys.Escape))
         {
             Close();
         }
+
+        const float cameraSpeed = 1.5f;
+        const float sensitivity = 0.2f;
+
+        if (input.IsKeyDown(Keys.W))
+        {
+            _camera.Position += _camera.Front * cameraSpeed * (float)e.Time; // вперед
+        }
+
+        if (input.IsKeyDown(Keys.S))
+        {
+            _camera.Position -= _camera.Front * cameraSpeed * (float)e.Time; // назад
+        }
+        if (input.IsKeyDown(Keys.A))
+        {
+            _camera.Position -= _camera.Right * cameraSpeed * (float)e.Time; // ліво
+        }
+        if (input.IsKeyDown(Keys.D))
+        {
+            _camera.Position += _camera.Right * cameraSpeed * (float)e.Time; // право
+        }
+        if (input.IsKeyDown(Keys.Space))
+        {
+            _camera.Position += _camera.Up * cameraSpeed * (float)e.Time; // вверх
+        }
+        if (input.IsKeyDown(Keys.LeftShift))
+        {
+            _camera.Position -= _camera.Up * cameraSpeed * (float)e.Time; // вниз
+        }
+
+        // отримаємо стан миші
+        var mouse = MouseState;
+
+        if (_firstMove) // Для цієї змінної bool спочатку встановлено значення true.
+        {
+            _lastPos = new Vector2(mouse.X, mouse.Y);
+            _firstMove = false;
+        }
+        else
+        {
+            // обчислення зміщення до позиціїї миші
+            var deltaX = mouse.X - _lastPos.X;
+            var deltaY = mouse.Y - _lastPos.Y;
+            _lastPos = new Vector2(mouse.X, mouse.Y);
+
+            // обрахуємо крок камери
+            _camera.Yaw += deltaX * sensitivity;
+            _camera.Pitch -= deltaY * sensitivity; // перевертаємо оскільки Y йде в низ
+        }
+    }
+
+    // Для функції коліщатка миші застосуємо масштабування камери.
+
+    protected override void OnMouseWheel(MouseWheelEventArgs e)
+    {
+        base.OnMouseWheel(e);
+
+        _camera.Fov -= e.OffsetY;
     }
 
     protected override void OnResize(ResizeEventArgs e)
@@ -147,5 +206,7 @@ public class Window : GameWindow
         base.OnResize(e);
 
         GL.Viewport(0, 0, Size.X, Size.Y);
+        // оновимо співвідношеннят сторін при зміні вікна
+        _camera.AspectRatio = Size.X / (float)Size.Y;
     }
 }
