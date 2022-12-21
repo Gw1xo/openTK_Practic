@@ -5,50 +5,97 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
 
-// створимо камеру
-// Насправді ми не можемо рухати камеру, але ми фактично рухаємо прямокутник.
+
 public class Window : GameWindow
 {
     private readonly float[] _vertices =
     {
-            // позиція              координати текстури
-             0.5f,  0.5f, 0.0f,      1.0f, 1.0f, 
-             0.5f, -0.5f, 0.0f,      1.0f, 0.0f, 
-            -0.5f, -0.5f, 0.0f,      0.0f, 0.0f, 
-            -0.5f,  0.5f, 0.0f,      0.0f, 1.0f  
+            //  Позиція              Нормалі                текстура
+            -0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     0.0f, 0.0f,
+
+            -0.5f, -0.5f,  0.5f,     0.0f,  0.0f,  1.0f,     0.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,     0.0f,  0.0f,  1.0f,     1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,     0.0f,  0.0f,  1.0f,     1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,     0.0f,  0.0f,  1.0f,     1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,     0.0f,  0.0f,  1.0f,     0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,     0.0f,  0.0f,  1.0f,     0.0f, 0.0f,
+
+            -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,     1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,     0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
+
+             0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,     1.0f,  0.0f,  0.0f,     1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f,      0.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,     1.0f,  0.0f,  0.0f,     0.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
+
+            -0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,     0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,     1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,     1.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,     1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,     0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,     0.0f, 1.0f,
+
+            -0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,     0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,     1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,     1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,     1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,     0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,     0.0f, 1.0f
         };
 
-    private readonly uint[] _indices =
+    private readonly Vector3[] _cubePositions =
     {
-            0, 1, 3,
-            1, 2, 3
+            new Vector3(0.0f, 0.0f, 0.0f),
+            new Vector3(2.0f, 5.0f, -15.0f),
+            new Vector3(-1.5f, -2.2f, -2.5f),
+            new Vector3(-3.8f, -2.0f, -12.3f),
+            new Vector3(2.4f, -0.4f, -3.5f),
+            new Vector3(-1.7f, 3.0f, -7.5f),
+            new Vector3(1.3f, -2.0f, -2.5f),
+            new Vector3(1.5f, 2.0f, -2.5f),
+            new Vector3(1.5f, 0.2f, -1.5f),
+            new Vector3(-1.3f, 1.0f, -1.5f)
         };
 
-    private int _elementBufferObject;
+
+    private readonly Vector3[] _pointLightPositions =
+    {
+            new Vector3(0.7f, 0.2f, 2.0f),
+            new Vector3(2.3f, -3.3f, -4.0f),
+            new Vector3(-4.0f, 2.0f, -12.0f),
+            new Vector3(0.0f, 0.0f, -3.0f)
+        };
 
     private int _vertexBufferObject;
 
-    private int _vertexArrayObject;
+    private int _vaoModel;
 
-    private Shader _shader;
+    private int _vaoLamp;
 
-    private Texture _texture;
+    private Shader _lampShader;
 
-    private Texture _texture2;
+    private Shader _lightingShader;
 
-    // Матриці перегляду та проекції видалено, оскільки вони більше тут не потрібні.
-    // Тепер вони в класі камера
+    private Texture _diffuseMap;
 
-    // потрібен екземпляр нового класу камери, щоб він міг керувати кодом матриці перегляду та проекції.
-    // також потрібне логічне значення true, щоб визначити, чи була миша переміщена вперше.
-    // додаємо останню позицію миші, щоб ми могли легко обчислити зсув миші.
+    private Texture _specularMap;
+
     private Camera _camera;
 
     private bool _firstMove = true;
 
     private Vector2 _lastPos;
-
-    private double _time;
 
     public Window(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
         : base(gameWindowSettings, nativeWindowSettings)
@@ -63,42 +110,44 @@ public class Window : GameWindow
 
         GL.Enable(EnableCap.DepthTest);
 
-        _vertexArrayObject = GL.GenVertexArray();
-        GL.BindVertexArray(_vertexArrayObject);
-
         _vertexBufferObject = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
         GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-        _elementBufferObject = GL.GenBuffer();
-        GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
-        GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
+        _lightingShader = new Shader("Shaders/shader.vert", "Shaders/lighting.frag");
+        _lampShader = new Shader("Shaders/shader.vert", "Shaders/fragshader.frag");
 
-        _shader = new Shader("Shaders/shader.vert", "Shaders/fragshader.frag");
-        _shader.Use();
+        {
+            _vaoModel = GL.GenVertexArray();
+            GL.BindVertexArray(_vaoModel);
 
-        var vertexLocation = _shader.GetAttribLocation("aPosition");
-        GL.EnableVertexAttribArray(vertexLocation);
-        GL.VertexAttribPointer(vertexLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+            var positionLocation = _lightingShader.GetAttribLocation("aPos");
+            GL.EnableVertexAttribArray(positionLocation);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
 
-        var texCoordLocation = _shader.GetAttribLocation("aTexCoord");
-        GL.EnableVertexAttribArray(texCoordLocation);
-        GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+            var normalLocation = _lightingShader.GetAttribLocation("aNormal");
+            GL.EnableVertexAttribArray(normalLocation);
+            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
 
-        _texture = Texture.LoadFromFile("Resources/container.png");
-        _texture.Use(TextureUnit.Texture0);
+            var texCoordLocation = _lightingShader.GetAttribLocation("aTexCoords");
+            GL.EnableVertexAttribArray(texCoordLocation);
+            GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
+        }
 
-        _texture2 = Texture.LoadFromFile("Resources/awesomeface.png");
-        _texture2.Use(TextureUnit.Texture1);
+        {
+            _vaoLamp = GL.GenVertexArray();
+            GL.BindVertexArray(_vaoLamp);
 
-        _shader.SetInt("texture0", 0);
-        _shader.SetInt("texture1", 1);
+            var positionLocation = _lampShader.GetAttribLocation("aPos");
+            GL.EnableVertexAttribArray(positionLocation);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
+        }
 
-        // Ми ініціалізуємо камеру так, щоб вона була на 3 одиниці позаду від прямокутника.
-        // Ми також надаємо йому належне співвідношення сторін.
+        _diffuseMap = Texture.LoadFromFile("Resources/container2.png");
+        _specularMap = Texture.LoadFromFile("Resources/container2_specular.png");
+
         _camera = new Camera(Vector3.UnitZ * 3, Size.X / (float)Size.Y);
 
-        // захоплюємо курсор миші і робимо його невидимим
         CursorState = CursorState.Grabbed;
     }
 
@@ -106,22 +155,80 @@ public class Window : GameWindow
     {
         base.OnRenderFrame(e);
 
-        _time += 4.0 * e.Time;
-
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        GL.BindVertexArray(_vertexArrayObject);
+        GL.BindVertexArray(_vaoModel);
 
-        _texture.Use(TextureUnit.Texture0);
-        _texture2.Use(TextureUnit.Texture1);
-        _shader.Use();
+        _diffuseMap.Use(TextureUnit.Texture0);
+        _specularMap.Use(TextureUnit.Texture1);
+        _lightingShader.Use();
 
-        var model = Matrix4.Identity * Matrix4.CreateRotationX((float)MathHelper.DegreesToRadians(_time));
-        _shader.SetMatrix4("model", model);
-        _shader.SetMatrix4("view", _camera.GetViewMatrix());
-        _shader.SetMatrix4("projection", _camera.GetProjectionMatrix());
+        _lightingShader.SetMatrix4("view", _camera.GetViewMatrix());
+        _lightingShader.SetMatrix4("projection", _camera.GetProjectionMatrix());
 
-        GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+        _lightingShader.SetVector3("viewPos", _camera.Position);
+
+        _lightingShader.SetInt("material.diffuse", 0);
+        _lightingShader.SetInt("material.specular", 1);
+        _lightingShader.SetVector3("material.specular", new Vector3(0.5f, 0.5f, 0.5f));
+        _lightingShader.SetFloat("material.shininess", 32.0f);
+
+
+        _lightingShader.SetVector3("dirLight.direction", new Vector3(-0.2f, -1.0f, -0.3f));
+        _lightingShader.SetVector3("dirLight.ambient", new Vector3(0.05f, 0.05f, 0.05f));
+        _lightingShader.SetVector3("dirLight.diffuse", new Vector3(0.4f, 0.4f, 0.4f));
+        _lightingShader.SetVector3("dirLight.specular", new Vector3(0.5f, 0.5f, 0.5f));
+
+        // Point lights
+        for (int i = 0; i < _pointLightPositions.Length; i++)
+        {
+            _lightingShader.SetVector3($"pointLights[{i}].position", _pointLightPositions[i]);
+            _lightingShader.SetVector3($"pointLights[{i}].ambient", new Vector3(0.05f, 0.05f, 0.05f));
+            _lightingShader.SetVector3($"pointLights[{i}].diffuse", new Vector3(0.8f, 0.8f, 0.8f));
+            _lightingShader.SetVector3($"pointLights[{i}].specular", new Vector3(1.0f, 1.0f, 1.0f));
+            _lightingShader.SetFloat($"pointLights[{i}].constant", 1.0f);
+            _lightingShader.SetFloat($"pointLights[{i}].linear", 0.09f);
+            _lightingShader.SetFloat($"pointLights[{i}].quadratic", 0.032f);
+        }
+
+        // Spot light
+        _lightingShader.SetVector3("spotLight.position", _camera.Position);
+        _lightingShader.SetVector3("spotLight.direction", _camera.Front);
+        _lightingShader.SetVector3("spotLight.ambient", new Vector3(0.0f, 0.0f, 0.0f));
+        _lightingShader.SetVector3("spotLight.diffuse", new Vector3(1.0f, 1.0f, 1.0f));
+        _lightingShader.SetVector3("spotLight.specular", new Vector3(1.0f, 1.0f, 1.0f));
+        _lightingShader.SetFloat("spotLight.constant", 1.0f);
+        _lightingShader.SetFloat("spotLight.linear", 0.09f);
+        _lightingShader.SetFloat("spotLight.quadratic", 0.032f);
+        _lightingShader.SetFloat("spotLight.cutOff", MathF.Cos(MathHelper.DegreesToRadians(12.5f)));
+        _lightingShader.SetFloat("spotLight.outerCutOff", MathF.Cos(MathHelper.DegreesToRadians(17.5f)));
+
+        for (int i = 0; i < _cubePositions.Length; i++)
+        {
+            Matrix4 model = Matrix4.CreateTranslation(_cubePositions[i]);
+            float angle = 20.0f * i;
+            model = model * Matrix4.CreateFromAxisAngle(new Vector3(1.0f, 0.3f, 0.5f), angle);
+            _lightingShader.SetMatrix4("model", model);
+
+            GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        }
+
+        GL.BindVertexArray(_vaoLamp);
+
+        _lampShader.Use();
+
+        _lampShader.SetMatrix4("view", _camera.GetViewMatrix());
+        _lampShader.SetMatrix4("projection", _camera.GetProjectionMatrix());
+
+        for (int i = 0; i < _pointLightPositions.Length; i++)
+        {
+            Matrix4 lampMatrix = Matrix4.CreateScale(0.2f);
+            lampMatrix = lampMatrix * Matrix4.CreateTranslation(_pointLightPositions[i]);
+
+            _lampShader.SetMatrix4("model", lampMatrix);
+
+            GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        }
 
         SwapBuffers();
     }
@@ -130,7 +237,7 @@ public class Window : GameWindow
     {
         base.OnUpdateFrame(e);
 
-        if (!IsFocused) // перевірка чи вікно у фокусі
+        if (!IsFocused)
         {
             return;
         }
@@ -147,52 +254,46 @@ public class Window : GameWindow
 
         if (input.IsKeyDown(Keys.W))
         {
-            _camera.Position += _camera.Front * cameraSpeed * (float)e.Time; // вперед
+            _camera.Position += _camera.Front * cameraSpeed * (float)e.Time;
         }
-
         if (input.IsKeyDown(Keys.S))
         {
-            _camera.Position -= _camera.Front * cameraSpeed * (float)e.Time; // назад
+            _camera.Position -= _camera.Front * cameraSpeed * (float)e.Time;
         }
         if (input.IsKeyDown(Keys.A))
         {
-            _camera.Position -= _camera.Right * cameraSpeed * (float)e.Time; // ліво
+            _camera.Position -= _camera.Right * cameraSpeed * (float)e.Time;
         }
         if (input.IsKeyDown(Keys.D))
         {
-            _camera.Position += _camera.Right * cameraSpeed * (float)e.Time; // право
+            _camera.Position += _camera.Right * cameraSpeed * (float)e.Time;
         }
         if (input.IsKeyDown(Keys.Space))
         {
-            _camera.Position += _camera.Up * cameraSpeed * (float)e.Time; // вверх
+            _camera.Position += _camera.Up * cameraSpeed * (float)e.Time;
         }
         if (input.IsKeyDown(Keys.LeftShift))
         {
-            _camera.Position -= _camera.Up * cameraSpeed * (float)e.Time; // вниз
+            _camera.Position -= _camera.Up * cameraSpeed * (float)e.Time;
         }
 
-        // отримаємо стан миші
         var mouse = MouseState;
 
-        if (_firstMove) // Для цієї змінної bool спочатку встановлено значення true.
+        if (_firstMove)
         {
             _lastPos = new Vector2(mouse.X, mouse.Y);
             _firstMove = false;
         }
         else
         {
-            // обчислення зміщення до позиціїї миші
             var deltaX = mouse.X - _lastPos.X;
             var deltaY = mouse.Y - _lastPos.Y;
             _lastPos = new Vector2(mouse.X, mouse.Y);
 
-            // обрахуємо крок камери
             _camera.Yaw += deltaX * sensitivity;
-            _camera.Pitch -= deltaY * sensitivity; // перевертаємо оскільки Y йде в низ
+            _camera.Pitch -= deltaY * sensitivity;
         }
     }
-
-    // Для функції коліщатка миші застосуємо масштабування камери.
 
     protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
@@ -206,7 +307,6 @@ public class Window : GameWindow
         base.OnResize(e);
 
         GL.Viewport(0, 0, Size.X, Size.Y);
-        // оновимо співвідношеннят сторін при зміні вікна
         _camera.AspectRatio = Size.X / (float)Size.Y;
     }
 }
